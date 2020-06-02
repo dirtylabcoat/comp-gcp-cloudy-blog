@@ -1,0 +1,10 @@
+{
+    "name": "new-subscriber",
+    "version": "0.0.1",
+    "dependencies": {
+        "@google-cloud/pubsub": "^0.18.0",
+        "@google-cloud/secret-manager": "^3.0.0",
+        "@google-cloud/datastore": "^5.1.0",
+        "@sendgrid/mail": "^7.1.0"
+    }
+}
