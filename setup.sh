@@ -1,8 +1,9 @@
 #!/bin/bash
-# Set defaults
+# Init and set defaults
+gcloud init
 gcloud config set project compgcp-blog-demo
-gcloud config set compute/region europe-west3
-gcloud config set compute/zone europe-west3-a
+gcloud config set compute/region europe-west1
+gcloud config set compute/zone europe-west1-b
 # Create Datastore database with GCP console
 # Set up Pub/Sub topics
 gcloud pubsub topics create new-blogpost
@@ -13,13 +14,22 @@ echo -n $SENDGRID_API_KEY | gcloud secrets create sendgrid-api-key --replication
 # Deploy Cloud Functions
 gcloud services enable cloudfunctions.googleapis.com
 pushd cloud-functions/new-blogpost
-gcloud functions deploy new-blogpost --region=europe-west3 --runtime nodejs10 --trigger-topic=new-blogpost --entry-point=newBlogpost
+gcloud functions deploy new-blogpost --region=europe-west1 --runtime nodejs10 --trigger-topic=new-blogpost --entry-point=newBlogpost
 popd
 pushd cloud-functions/new-subscriber
-gcloud functions deploy new-subscriber --region=europe-west3 --runtime nodejs10 --trigger-topic=new-subscriber --entry-point=newSubscriber
+gcloud functions deploy new-subscriber --region=europe-west1 --runtime nodejs10 --trigger-topic=new-subscriber --entry-point=newSubscriber
 popd
-# Deploy website with Cloud Run
+# Create a docker repo in Artifact Registry
+gcloud services enable artifactregistry.googleapis.com
+gcloud beta artifacts repositories create cloudy-blog-repo --repository-format=docker --location=europe-west1 --description="Docker repo for cloudy-blog"
+# Configure Docker authentication
+gcloud auth configure-docker europe-west1-docker.pkg.dev
+# Create secret with Google Application credentials
+cat credentials.json | gcloud secrets create google-application-credentials --replication-policy="automatic" --data-file=-
+# Build Docker image with Cloud Build and deploy website with Cloud Run
 pushd blog-website
-
+gcloud builds submit --config=cloudbuild.yaml --substitutions=_BLOGIMG="cloudy-blog" .
+gcloud run deploy --image europe-west1-docker.pkg.dev/compgcp-blog-demo/cloudy-blog-repo/cloudy-blog --platform managed
 popd
 # Add permission 'secretmanager.versions.access' to App Engine default service account
+
