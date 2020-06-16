@@ -12,10 +12,21 @@ async function getSendgridApiKey() {
     return sendgridApiKey;
 }
 
-async function getSubscribers() {
-    const query = datastore.createQuery('subscriber').order('created');
+async function sendEmailToSubscribers(subject) {
+    const query = datastore.createQuery('blog', 'subscriber').order('created', { descending: false });
     const [subscribers] = await datastore.runQuery(query);
-    return subscribers;
+    for (const sub of subscribers) {
+        const subEmail = sub['emailAddress'];
+        console.log(`Subscriber ${subEmail}`);
+        const email = {
+            to: sub['emailAddress'],
+            from: 'cloudymccloud0001@gmail.com',
+            subject: 'New blog post',
+            text: `Go read the new post, ${subject}.`,
+            html: `Go read the new post, <strong>${subject}</strong>`
+        };
+        sendgridClient.send(email);
+    }
 }
 
 // Triggered by Pub/Sub-topic "new-blogpost"
@@ -24,26 +35,12 @@ exports.newBlogpost = (event, context) => {
     const msg = JSON.parse(Buffer.from(event.data, 'base64').toString());
     const subject = msg.subject;
     console.log(`New blog published with subject ${subject}`);
-    // Fetch subscribers from Datastore
-
     // Get the Sendgrid API key from Google Secrets Manager and then
     // send e-mail to all the subscribers
     getSendgridApiKey()
         .then(apiKey => {
             sendgridClient.setApiKey(apiKey);
-            const subscribers = getSubscribers();
-            for (const sub of subscribers) {
-                const subEmail = sub['emailAddress'];
-                console.log(`Subscriber ${subEmail}`);
-                const email = {
-                    to: sub['emailAddress'],
-                    from: 'cloudymccloud0001@gmail.com',
-                    subject: 'New blog post',
-                    text: `Go read the new post, ${subject}.`,
-                    html: `Go read the new post, <strong>${subject}</strong>`
-                };
-                sendgridClient.send(email);
-            }
+            sendEmailToSubscribers(subject);
             console.log("E-mail(s) about new blog post might have been sent");
         });
 };

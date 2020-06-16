@@ -1,0 +1,24 @@
+# Check out from GCP repo
+# Deploy Cloud Functions
+# Build website Docker-image and inject credentials from secret manager
+steps:
+  - name: gcr.io/cloud-builders/gcloud
+    entrypoint: "bash"
+    args:
+      [
+        "-c",
+        "gcloud secrets versions access latest --secret=cloudy-blog-ga-credentials > credentials.json",
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "europe-west1-docker.pkg.dev/compgcp-blog-demo/cloudy-blog-repo/${_BLOGIMG}",
+        "--build-arg",
+        "GA_CREDENTIALS=`cat /workspace/credentials.json`",
+        ".",
+      ]
+images:
+  - "europe-west1-docker.pkg.dev/compgcp-blog-demo/cloudy-blog-repo/${_BLOGIMG}"
+# Deploy website to Cloud Run

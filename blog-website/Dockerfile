@@ -1,6 +1,16 @@
-FROM webdevops/php-nginx:7.4-alpine
+FROM composer AS composer
 COPY . /app
+RUN composer install \
+  --optimize-autoloader \
+  --no-interaction \
+  --no-progress
+
+FROM trafex/alpine-nginx-php7
+ARG SECRET_DIR=/etc/nginx/secret
 ARG GA_CREDENTIALS
-RUN echo ${GA_CREDENTIALS} > /app/credentials.json
-RUN cd /app && composer install
-ENV GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
+ENV GOOGLE_APPLICATION_CREDENTIALS=${SECRET_DIR}/credentials.json
+USER root
+RUN mkdir -p ${SECRET_DIR}
+RUN echo ${GA_CREDENTIALS} > ${SECRET_DIR}/credentials.json
+COPY --chown=nginx --from=composer /app /var/www/html
+USER nobody

@@ -122,6 +122,7 @@ Desktop.ini
 !.htaccess
 !/.gitignore
 !/.travis.yml
+!**/.dockerignore
 
 **/credentials.json
 

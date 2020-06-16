@@ -25,11 +25,11 @@ gcloud beta artifacts repositories create cloudy-blog-repo --repository-format=d
 # Configure Docker authentication
 gcloud auth configure-docker europe-west1-docker.pkg.dev
 # Create secret with Google Application credentials
-cat credentials.json | gcloud secrets create google-application-credentials --replication-policy="automatic" --data-file=-
+cat credentials.json | gcloud secrets create cloudy-blog-ga-credentials --replication-policy="automatic" --data-file=-
 # Build Docker image with Cloud Build and deploy website with Cloud Run
 pushd blog-website
 gcloud builds submit --config=cloudbuild.yaml --substitutions=_BLOGIMG="cloudy-blog" .
-gcloud run deploy --image europe-west1-docker.pkg.dev/compgcp-blog-demo/cloudy-blog-repo/cloudy-blog --platform managed
+gcloud run deploy cloudy-blog --image europe-west1-docker.pkg.dev/compgcp-blog-demo/cloudy-blog-repo/cloudy-blog --platform managed --region europe-west1
 popd
 # Add permission 'secretmanager.versions.access' to App Engine default service account
 
